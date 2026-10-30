@@ -1,0 +1,278 @@
+# Exemplos para o HTTP Client do IntelliJ.
+# Informe suas credenciais, execute o login e cole o token retornado abaixo.
+# Use nos IDs os registros de teste que VOCE criou, nao os dados iniciais.
+@baseUrl = http://localhost:8080
+@email = seu@email.com
+@senha = sua-senha
+@token = COLE_O_TOKEN_SEM_ASPAS
+@idUnidade = COLE_O_ID_DA_UNIDADE_CRIADA
+@idLicenca = COLE_O_ID_DA_LICENCA_CRIADA
+@idEmissao = COLE_O_ID_DA_EMISSAO_CRIADA
+@idCompensacao = COLE_O_ID_DA_COMPENSACAO
+@idAlerta = COLE_O_ID_DO_ALERTA
+
+### Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{"email":"{{email}}","senha":"{{senha}}"}
+
+# Contrato REST dos cinco recursos:
+# GET lista/id = 200; POST = 201; PUT/PATCH = 200; DELETE = 204.
+# Inexistente = 404; validacao = 400; vinculos/duplicidade = 409; sem LO = 422.
+# Todos /api/** continuam exigindo Bearer. Rotas de autenticacao nao mudaram.
+# HEAD usa GET sem corpo; OPTIONS retorna Allow automaticamente pelo Spring.
+# PUT substitui os campos de entrada; PATCH aceita apenas campos do DTO de entrada.
+# PATCH omitido preserva; null explicito passa pela validacao (obrigatorio = 400).
+# Datas opcionais nulas/omitidas no cadastro/PUT usam hoje; no PATCH omissao preserva.
+# Status/origem opcionais nulos usam os defaults. status:null em licenca remove suspensao.
+# PATCH rejeita ID proprio, mesReferencia e emissaoAcumuladaMes. idUnidade nos filhos e editavel.
+# Remova filhos antes da unidade. DELETE de emissao nao exige LO (permite correcao).
+# Use apenas registros de teste seus; estes exemplos nao sao um script sequencial de carga.
+
+### Listar unidades
+GET {{baseUrl}}/api/unidades
+Authorization: Bearer {{token}}
+
+### Buscar unidade
+GET {{baseUrl}}/api/unidades/{{idUnidade}}
+Authorization: Bearer {{token}}
+
+### Cadastrar unidade (201)
+POST {{baseUrl}}/api/unidades
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"nome":"Unidade de teste","cidade":"Caxias do Sul","uf":"RS","setor":"Metalurgia","limiteCo2Mensal":100}
+
+### Atualizar unidade (nao recebe acumulado nem mes de referencia)
+PUT {{baseUrl}}/api/unidades/{{idUnidade}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"nome":"Unidade de teste atualizada","cidade":"Caxias do Sul","uf":"RS","setor":"Metalurgia","limiteCo2Mensal":100}
+
+### Excluir unidade (204); com registros vinculados, retorna 409
+DELETE {{baseUrl}}/api/unidades/{{idUnidade}}
+Authorization: Bearer {{token}}
+
+### Listar licencas
+GET {{baseUrl}}/api/licencas
+Authorization: Bearer {{token}}
+
+### Buscar licenca
+GET {{baseUrl}}/api/licencas/{{idLicenca}}
+Authorization: Bearer {{token}}
+
+### Cadastrar LO valida (status e calculado pela trigger)
+POST {{baseUrl}}/api/licencas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"idUnidade":{{idUnidade}},"numero":"LO-TESTE-001","tipo":"LO","orgaoEmissor":"FEPAM","dataEmissao":"2026-01-01","dataValidade":"2099-12-31"}
+
+### Atualizar ou suspender licenca (para reativar, omita status)
+PUT {{baseUrl}}/api/licencas/{{idLicenca}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"idUnidade":{{idUnidade}},"numero":"LO-TESTE-001","tipo":"LO","orgaoEmissor":"FEPAM","dataEmissao":"2026-01-01","dataValidade":"2099-12-31","status":"SUSPENSA"}
+
+### Excluir licenca
+DELETE {{baseUrl}}/api/licencas/{{idLicenca}}
+Authorization: Bearer {{token}}
+
+### Listar emissoes
+GET {{baseUrl}}/api/emissoes
+Authorization: Bearer {{token}}
+
+### Buscar emissao
+GET {{baseUrl}}/api/emissoes/{{idEmissao}}
+Authorization: Bearer {{token}}
+
+### Cadastrar emissao (a unidade precisa de uma LO valida e nao suspensa)
+# Sem dataRegistro, usa a data atual. Sem LO valida, retorna 422.
+# A trigger atualiza o acumulado e pode gerar compensacao e alerta.
+POST {{baseUrl}}/api/emissoes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"idUnidade":{{idUnidade}},"fonte":"DIESEL","escopo":1,"qtdTco2e":125}
+
+### Listar compensacoes
+GET {{baseUrl}}/api/compensacoes
+Authorization: Bearer {{token}}
+
+### Buscar compensacao
+GET {{baseUrl}}/api/compensacoes/{{idCompensacao}}
+Authorization: Bearer {{token}}
+
+### Listar alertas
+GET {{baseUrl}}/api/alertas
+Authorization: Bearer {{token}}
+
+### Buscar alerta
+GET {{baseUrl}}/api/alertas/{{idAlerta}}
+Authorization: Bearer {{token}}
+
+### PATCH unidades
+PATCH {{baseUrl}}/api/unidades/{{idUnidade}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"cidade":"Porto Alegre"}
+
+### PATCH licencas
+PATCH {{baseUrl}}/api/licencas/{{idLicenca}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"status":null}
+
+### PUT emissoes
+PUT {{baseUrl}}/api/emissoes/{{idEmissao}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"idUnidade":{{idUnidade}},"dataRegistro":"2026-10-28","fonte":"GASOLINA","escopo":1,"qtdTco2e":80}
+
+### PATCH emissoes
+PATCH {{baseUrl}}/api/emissoes/{{idEmissao}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"qtdTco2e":70}
+
+### DELETE emissoes
+DELETE {{baseUrl}}/api/emissoes/{{idEmissao}}
+Authorization: Bearer {{token}}
+
+### POST compensacoes
+POST {{baseUrl}}/api/compensacoes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"idUnidade":{{idUnidade}},"projeto":"REFLORESTAMENTO","qtdTco2e":20}
+
+### PUT compensacoes
+PUT {{baseUrl}}/api/compensacoes/{{idCompensacao}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"idUnidade":{{idUnidade}},"projeto":"CREDITO_CARBONO","qtdTco2e":15,"dataRegistro":"2026-10-28","status":"CONCLUIDA","origem":"MANUAL"}
+
+### PATCH compensacoes
+PATCH {{baseUrl}}/api/compensacoes/{{idCompensacao}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"status":"EM_ANDAMENTO"}
+
+### DELETE compensacoes
+DELETE {{baseUrl}}/api/compensacoes/{{idCompensacao}}
+Authorization: Bearer {{token}}
+
+### POST alertas
+POST {{baseUrl}}/api/alertas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"idUnidade":{{idUnidade}},"tipoAlerta":"AUDITORIA_INTERNA","descricao":"Inspecao de teste"}
+
+### PUT alertas
+PUT {{baseUrl}}/api/alertas/{{idAlerta}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"idUnidade":{{idUnidade}},"tipoAlerta":"AUDITORIA_INTERNA","descricao":"Inspecao atualizada","dataAlerta":"2026-10-28","status":"EM_ANALISE"}
+
+### PATCH alertas
+PATCH {{baseUrl}}/api/alertas/{{idAlerta}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"status":"RESOLVIDO"}
+
+### DELETE alertas
+DELETE {{baseUrl}}/api/alertas/{{idAlerta}}
+Authorization: Bearer {{token}}
+
+### HEAD unidades
+HEAD {{baseUrl}}/api/unidades
+Authorization: Bearer {{token}}
+
+### HEAD unidades/{{idUnidade}}
+HEAD {{baseUrl}}/api/unidades/{{idUnidade}}
+Authorization: Bearer {{token}}
+
+### OPTIONS unidades
+OPTIONS {{baseUrl}}/api/unidades
+Authorization: Bearer {{token}}
+
+### OPTIONS unidades/{{idUnidade}}
+OPTIONS {{baseUrl}}/api/unidades/{{idUnidade}}
+Authorization: Bearer {{token}}
+
+### HEAD licencas
+HEAD {{baseUrl}}/api/licencas
+Authorization: Bearer {{token}}
+
+### HEAD licencas/{{idLicenca}}
+HEAD {{baseUrl}}/api/licencas/{{idLicenca}}
+Authorization: Bearer {{token}}
+
+### OPTIONS licencas
+OPTIONS {{baseUrl}}/api/licencas
+Authorization: Bearer {{token}}
+
+### OPTIONS licencas/{{idLicenca}}
+OPTIONS {{baseUrl}}/api/licencas/{{idLicenca}}
+Authorization: Bearer {{token}}
+
+### HEAD emissoes
+HEAD {{baseUrl}}/api/emissoes
+Authorization: Bearer {{token}}
+
+### HEAD emissoes/{{idEmissao}}
+HEAD {{baseUrl}}/api/emissoes/{{idEmissao}}
+Authorization: Bearer {{token}}
+
+### OPTIONS emissoes
+OPTIONS {{baseUrl}}/api/emissoes
+Authorization: Bearer {{token}}
+
+### OPTIONS emissoes/{{idEmissao}}
+OPTIONS {{baseUrl}}/api/emissoes/{{idEmissao}}
+Authorization: Bearer {{token}}
+
+### HEAD compensacoes
+HEAD {{baseUrl}}/api/compensacoes
+Authorization: Bearer {{token}}
+
+### HEAD compensacoes/{{idCompensacao}}
+HEAD {{baseUrl}}/api/compensacoes/{{idCompensacao}}
+Authorization: Bearer {{token}}
+
+### OPTIONS compensacoes
+OPTIONS {{baseUrl}}/api/compensacoes
+Authorization: Bearer {{token}}
+
+### OPTIONS compensacoes/{{idCompensacao}}
+OPTIONS {{baseUrl}}/api/compensacoes/{{idCompensacao}}
+Authorization: Bearer {{token}}
+
+### HEAD alertas
+HEAD {{baseUrl}}/api/alertas
+Authorization: Bearer {{token}}
+
+### HEAD alertas/{{idAlerta}}
+HEAD {{baseUrl}}/api/alertas/{{idAlerta}}
+Authorization: Bearer {{token}}
+
+### OPTIONS alertas
+OPTIONS {{baseUrl}}/api/alertas
+Authorization: Bearer {{token}}
+
+### OPTIONS alertas/{{idAlerta}}
+OPTIONS {{baseUrl}}/api/alertas/{{idAlerta}}
+Authorization: Bearer {{token}}
